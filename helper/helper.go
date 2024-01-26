@@ -24,13 +24,3 @@ func GreetUsers(ticketsRemaining uint, conferenceTickets uint) {
 	fmt.Println("-------------------------------------------------------------------------")
 
 }
-
-func GetFirstNames(bookings []string) []string {
-	firstNames := []string{}
-	for _, booking := range bookings {
-		var names = strings.Fields(booking)
-		firstNames = append(firstNames, names[0])
-
-	}
-	return firstNames
-}
