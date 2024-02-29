@@ -2,121 +2,120 @@ package main
 
 import (
 	"fmt"
-	"go-booking-app/helper"
 	"sync"
 	"time"
 )
+
+const conferenceTickets int = 50
+
+var conferenceName = "Go Conference"
+var remainingTickets uint = 50
+var bookings = make([]UserData, 0)
 
 type UserData struct {
 	firstName       string
 	lastName        string
 	email           string
-	ticketsRequired uint
+	numberOfTickets uint
 }
 
 var wg = sync.WaitGroup{}
 
 func main() {
 
-	const conferenceTickets uint = 50
-	var ticketsRemaining uint = 50
+	greetUsers()
 
-	helper.GreetUsers(ticketsRemaining, conferenceTickets)
+	// for {
+	firstName, lastName, email, userTickets := getUserInput()
+	isValidName, isValidEmail, isValidTicketNumber := validateUserInput(firstName, lastName, email, userTickets)
 
-	//var bookings = make([]map[string]string, 0)
-	var bookings = make([]UserData, 0)
+	if isValidName && isValidEmail && isValidTicketNumber {
 
-	for ticketsRemaining > 0 {
-		var firstName string
-		var lastName string
-		var email string
-		var ticketsRequired uint
-
-		fmt.Println("Please enter your first name")
-		fmt.Scan(&firstName)
-		fmt.Println("Please enter your last name")
-		fmt.Scan(&lastName)
-		fmt.Println("Please enter your email")
-		fmt.Scan(&email)
-		fmt.Printf("Hi %v %v, how many tickets would you like?\n", firstName, lastName)
-		fmt.Scan(&ticketsRequired)
-
-		isValidFirstName, isValidLastName, isValidEmail, isValidTicketsRequired, isValidTicketNumbersRemaining := helper.GetValidInput(firstName, lastName, email, ticketsRequired, ticketsRemaining)
-
-		if !isValidFirstName {
-			fmt.Print("You have entered an invalid first name (minimum 2 characters),  try again\n-----------------------------------------\n")
-			continue
-		}
-
-		if !isValidLastName {
-			fmt.Print("You have entered an invalid last name (minimum 2 characters),  try again\n-----------------------------------------\n")
-			continue
-		}
-
-		if !isValidEmail {
-			fmt.Print("You have entered an invalid email (missing @),  try again\n-----------------------------------------\n")
-			continue
-		}
-
-		if !isValidTicketsRequired {
-			fmt.Print("You have entered an invalid number of tickets required, must be more than zero,  try again\n-----------------------------------------\n")
-			continue
-		}
-		if !isValidTicketNumbersRemaining {
-			fmt.Print("You have entered an invalid number of tickets required, exceeds number available,  try again\n-----------------------------------------\n")
-			continue
-		}
-
-		println("")
-
-		ticketsRemaining -= ticketsRequired
-
-		//var userData = make(map[string]string)
-		// userData["firstName"] = firstName
-		// userData["lastName"] = lastName
-		// userData["email"] = email
-		// userData["ticketsRequired"] = strconv.FormatUint(uint64(ticketsRequired), 10)
-		var userData = UserData{
-			firstName:       firstName,
-			lastName:        lastName,
-			email:           email,
-			ticketsRequired: ticketsRequired,
-		}
-
-		bookings = append(bookings, userData)
-		fmt.Printf("List of booking %v\n-----------------------------------------\n", bookings)
-
-		fmt.Printf("Thanks %v %v, we have reserved %v tickets for you.  Confirmation sent to %v\n", firstName, lastName, ticketsRequired, email)
-		println("")
-		fmt.Printf("There are now %v tickets left\n", ticketsRemaining)
-		println("")
-
-		firstNames := getFirstNames(bookings)
-
-		fmt.Printf("Current bookings are %v\n-----------------------------------------\n", firstNames)
+		bookTicket(userTickets, firstName, lastName, email)
 
 		wg.Add(1)
-		go sendTicket(ticketsRequired, firstName, lastName, email)
+		go sendTicket(userTickets, firstName, lastName, email)
 
+		firstNames := getFirstNames()
+		fmt.Printf("The first names of bookings are: %v\n", firstNames)
+
+		if remainingTickets == 0 {
+			// end program
+			fmt.Println("Our conference is booked out. Come back next year.")
+			// break
+		}
+	} else {
+		if !isValidName {
+			fmt.Println("first name or last name you entered is too short")
+		}
+		if !isValidEmail {
+			fmt.Println("email address you entered doesn't contain @ sign")
+		}
+		if !isValidTicketNumber {
+			fmt.Println("number of tickets you entered is invalid")
+		}
 	}
+	//}
 	wg.Wait()
-	fmt.Println("All tickets sold,  closing ticket office!\n-----------------------------------------")
 }
 
-func getFirstNames(bookings []UserData) []string {
+func greetUsers() {
+	fmt.Printf("Welcome to %v booking application\n", conferenceName)
+	fmt.Printf("We have total of %v tickets and %v are still available.\n", conferenceTickets, remainingTickets)
+	fmt.Println("Get your tickets here to attend")
+}
+
+func getFirstNames() []string {
 	firstNames := []string{}
 	for _, booking := range bookings {
 		firstNames = append(firstNames, booking.firstName)
-
 	}
 	return firstNames
 }
 
-func sendTicket(ticketsRequired uint, firstName string, lastName string, email string) {
+func getUserInput() (string, string, string, uint) {
+	var firstName string
+	var lastName string
+	var email string
+	var userTickets uint
+
+	fmt.Println("Enter your first name: ")
+	fmt.Scan(&firstName)
+
+	fmt.Println("Enter your last name: ")
+	fmt.Scan(&lastName)
+
+	fmt.Println("Enter your email address: ")
+	fmt.Scan(&email)
+
+	fmt.Println("Enter number of tickets: ")
+	fmt.Scan(&userTickets)
+
+	return firstName, lastName, email, userTickets
+}
+
+func bookTicket(userTickets uint, firstName string, lastName string, email string) {
+	remainingTickets = remainingTickets - userTickets
+
+	var userData = UserData{
+		firstName:       firstName,
+		lastName:        lastName,
+		email:           email,
+		numberOfTickets: userTickets,
+	}
+
+	bookings = append(bookings, userData)
+	fmt.Printf("List of bookings is %v\n", bookings)
+
+	fmt.Printf("Thank you %v %v for booking %v tickets. You will receive a confirmation email at %v\n", firstName, lastName, userTickets, email)
+	fmt.Printf("%v tickets remaining for %v\n", remainingTickets, conferenceName)
+}
+
+func sendTicket(userTickets uint, firstName string, lastName string, email string) {
 	time.Sleep(50 * time.Second)
-	var ticket = fmt.Sprintf("Sending %v Tickets to %v %v ", ticketsRequired, firstName, lastName)
-	fmt.Println("\n###############################################")
-	fmt.Printf("%vat email %v\n", ticket, email)
-	fmt.Println("###############################################\n\n\n")
+	var ticket = fmt.Sprintf("%v tickets for %v %v", userTickets, firstName, lastName)
+	fmt.Println("#################")
+	fmt.Printf("Sending ticket:\n %v \nto email address %v\n", ticket, email)
+	fmt.Println("#################")
 	wg.Done()
 }
